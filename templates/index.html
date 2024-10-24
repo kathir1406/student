@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart ContentBot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #2c3e50; /* Dark background */
+            color: white; /* White text */
+            text-align: center; /* Center-align text */
+        }
+        h1 {
+            color: #87CEEB; /* Sky blue for the bot name */
+        }
+        .button-container {
+            margin-top: 40px;
+        }
+        button {
+            background-color: #3498db; /* Sky blue button */
+            color: white; /* White text for buttons */
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin: 10px; /* Space between buttons */
+        }
+        button:hover {
+            background-color: #2980b9; /* Darker blue on hover */
+        }
+        .tab {
+            display: none; /* Hide all sections by default */
+            background-color: #87CEEB; /* Sky blue box */
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px auto; /* Center the tab */
+            max-width: 600px; /* Max width for the tabs */
+        }
+        .active {
+            display: block; /* Show the active section */
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            background-color: #e0f7fa; /* Light background for textareas */
+            color: black; /* Black text for readability */
+            border: 1px solid #3498db; /* Border matching button color */
+            border-radius: 5px;
+        }
+        .message {
+            color: red;
+            text-align: center;
+        }
+        #uploadSection {
+            display: none; /* Hide the upload section initially */
+        }
+    </style>
+</head>
+<body>
+    <h1>Smart ContentBot</h1>
+
+    <div class="button-container">
+        <button onclick="showTab('summaryTab')">Summary</button>
+        <button onclick="showTab('extractedTextTab')">Extracted Text</button>
+        <button onclick="showTab('bookmarksTab')">Bookmarks</button>
+        <button onclick="showTab('exportTab')">Export</button>
+    </div>
+
+    <div id="summaryTab" class="tab">
+        <h2>Summary</h2>
+        <div id="uploadSection">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="pdfFile" name="file" accept="application/pdf"><br><br>
+                <button type="button" onclick="uploadPDF()">Summarize PDF</button>
+            </form>
+        </div>
+        <div id="loadingMessage" class="message" style="display:none;">Generating summary, please wait...</div>
+        <textarea id="summaryOutput" readonly></textarea>
+    </div>
+
+    <div id="extractedTextTab" class="tab">
+        <h2>Extracted Text</h2>
+        <textarea id="extractedTextOutput" readonly></textarea>
+    </div>
+
+    <div id="bookmarksTab" class="tab">
+        <h3>Bookmark Section</h3>
+        <textarea id="bookmarkText" placeholder="Enter text to bookmark"></textarea><br>
+        <button type="button" onclick="addBookmark()">Add Bookmark</button>
+        <h2>Your Bookmarks</h2>
+        <div id="bookmarksList"></div>
+    </div>
+
+    <div id="exportTab" class="tab">
+        <h3>Export Content</h3>
+        <select id="exportFormat">
+            <option value="pdf">PDF</option>
+            <option value="word">Word Document</option>
+        </select>
+        <input type="text" id="exportFilename" placeholder="Enter filename"><br>
+        <button type="button" onclick="exportContent()">Export</button>
+    </div>
+
+    <div id="error" class="message"></div>
+
+    <script>
+        const userId = 'user123';  // Dummy user ID
+
+        function showTab(tabId) {
+            // Hide all sections
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // Show the selected tab
+            document.getElementById(tabId).classList.add('active');
+
+            // Show the upload section when 'Summary' tab is selected
+            if (tabId === 'summaryTab') {
+                document.getElementById('uploadSection').style.display = 'block';
+            } else {
+                document.getElementById('uploadSection').style.display = 'none';
+            }
+        }
+
+        function uploadPDF() {
+            const formData = new FormData();
+            const fileField = document.querySelector('input[type="file"]');
+            
+            formData.append('file', fileField.files[0]);
+
+            // Show loading message
+            document.getElementById("loadingMessage").style.display = 'block';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading message
+                document.getElementById("loadingMessage").style.display = 'none';
+
+                if (data.summary) {
+                    document.getElementById("summaryOutput").value = data.summary;
+                    document.getElementById("extractedTextOutput").value = data.extracted_text;
+                } else if (data.error) {
+                    document.getElementById("error").innerText = data.error;
+                }
+            })
+            .catch(error => {
+                // Hide loading message
+                document.getElementById("loadingMessage").style.display = 'none';
+                document.getElementById("error").innerText = "An error occurred. Please try again.";
+                console.error('Error:', error);
+            });
+        }
+
+        function addBookmark() {
+            const section = document.getElementById("bookmarkText").value;
+            fetch('/add_bookmark', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: userId, section: section })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.bookmarks) {
+                    displayBookmarks(data.bookmarks);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function displayBookmarks(bookmarks) {
+            const bookmarksList = document.getElementById("bookmarksList");
+            bookmarksList.innerHTML = ""; // Clear the previous list
+            bookmarks.forEach(bookmark => {
+                const div = document.createElement("div");
+                div.innerText = bookmark;
+                bookmarksList.appendChild(div);
+            });
+        }
+
+        function exportContent() {
+            const format = document.getElementById("exportFormat").value;
+            const filename = document.getElementById("exportFilename").value;
+            const content = document.getElementById("summaryOutput").value;
+
+            fetch('/export', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: content, format: format, filename: filename })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                } else {
+                    throw new Error('Error exporting content');
+                }
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename + '.' + format;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

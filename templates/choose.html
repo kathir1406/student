@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart ContentBot</title>
+    <script src="second.js"></script>
+    <link rel="stylesheet" href="second.css">
+</head>
+<body>
+    <nav class="logo">
+        <ul>
+            <li><a href="home,html">Home</a></li>
+            <li><a href="contact.html">contact us</a></li>
+            <li><a href="index.html">Sign up</a></li>
+        </ul>
+    </nav>
+    <h1>Smart ContentBot</h1>
+    <div class="button-container">
+        <button onclick="showTab('summaryTab')">Summary</button>
+        <button onclick="showTab('extractedTextTab')">Extracted Text</button>
+        <button onclick="showTab('bookmarksTab')">Bookmarks</button>
+        <button onclick="showTab('exportTab')">Export</button>
+    </div>
+
+    <div id="summaryTab" class="tab active">
+        <h2>Summary</h2>
+        <textarea id="summaryOutput" readonly></textarea>
+    </div>
+
+    <div id="extractedTextTab" class="tab">
+        <h2>Extracted Text</h2>
+        <textarea id="extractedTextOutput" readonly></textarea>
+    </div>
+
+    <div id="bookmarksTab" class="tab">
+        <h3>Bookmark Section</h3>
+        <textarea id="bookmarkText" placeholder="Enter text to bookmark"></textarea><br>
+        <button type="button" onclick="addBookmark()">Add Bookmark</button>
+        <h2>Your Bookmarks</h2>
+        <div id="bookmarksList"></div>
+    </div>
+
+    <div id="exportTab" class="tab">
+        <h3>Export Content</h3>
+        
+        <select id="exportFormat">
+            <option value="pdf">PDF</option>
+            <option value="word">Word Document</option>
+        </select>
+        <input type="text" id="exportFilename" placeholder="Enter filename"><br>
+        <button type="button" onclick="exportContent()">Export</button>
+    </div>
+
+    <div id="error" class="message"></div>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" id="pdfFile" name="file" accept="application/pdf"><br><br>
+        <button type="button" onclick="uploadPDF()">Summarize PDF</button>
+    </form>
+</body>
+</html>
